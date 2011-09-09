@@ -229,6 +229,7 @@ class Translatable extends \lithium\core\StaticObject {
 		$fields = static::$_configurations['fields'];
 		$locales = static::$_configurations['locales'];
 		$class::applyFilter('find', function($self, $params, $chain) use ($fields, $locales) {
+			
 			if (isset($params['options']['Ignore-Locale'])) {
 				unset($params['options']['Ignore-Locale']);
 				return $chain->next($self, $params, $chain);
@@ -251,9 +252,10 @@ class Translatable extends \lithium\core\StaticObject {
 			if (is_int($result)) {
 				return $result;
 			}
+			
 			// Otherwise send it to the result parser which will output it as needed.
 			$function = $class::formatReturnDocument($options, $fields);
-			if ($params['type'] == 'all') {
+			if ($params['type'] == 'all' || $params['type'] == 'search') {
 				$result->each($function);
 				return $result;
 			}
@@ -302,10 +304,10 @@ class Translatable extends \lithium\core\StaticObject {
 
 		return function($result) use ($options, $fields) {
 
-			if (!is_object($result)) {
+			if (!is_object($result) && !isset($result->localizations)) {
 				return $result;
 			}
-
+			
 			foreach($result->localizations as $localization) {
 				$locale = $localization->locale;
 				$fields[] = 'locale';
