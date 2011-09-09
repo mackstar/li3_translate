@@ -68,12 +68,17 @@ class Translatable extends \lithium\core\StaticObject {
 		$classes = static::$_classes;
 		$fields = static::$_configurations['fields'];
 		$locales = static::$_configurations['locales'];
-		$validation = static::$_configurations['validation'];
+		if (isset(static::$_configurations['default'])) {
+			$default = static::$_configurations['default'];
+		} else {
+			$default = null;
+		}
 
 		$class::applyFilter('save', 
-			function($self, $params, $chain) use ($classes, $fields, $locales, $validation) {
+			function($self, $params, $chain) use ($classes, $fields, $locales, $default) {
 
 			$entity = $params['entity'];
+			
 			if($params['data']) {
 				$entity->set($params['data']);
 			}
@@ -85,12 +90,17 @@ class Translatable extends \lithium\core\StaticObject {
 					function($key) use ($entity) { 
 						return array_key_exists($key, $entity->data()); 
 					}, $locales);
-				if (!in_array(true, $localePresent)) {
+				if (!in_array(true, $localePresent) && !isset($default)) {
 					$entity->errors('locale', 'Locale has not been set.');
 					return false;
 				}
-				if (in_array(true, $localePresent) && !isset($validation)) {
-					$entity->errors('locale', 'Validation locale needs to be set in order to save this type of data.');
+				if (!in_array(true, $localePresent) && isset($default)) {
+					$entity->locale = $default;
+				}
+				if (in_array(true, $localePresent) && !isset($default)) {
+					$entity->errors(
+						'locale', 'Validation locale needs to be set in order to save this type of data.'
+					);
 					return false;
 				}
 			}
@@ -101,27 +111,25 @@ class Translatable extends \lithium\core\StaticObject {
 			$processFields = function($fields, $entityData, $locale) use ($entity) {
 				$data = array();
 				$entityData['locale'] = $locale;
-				
+
 				// Add to data directly from the entity data or from the presaved localization.
 				// Data is only added from the translatable fields
 				foreach($fields as $key) {
-					
+
 					// If the key is available
 					if(isset($entityData[$key])) {
 						$data[$key] = $entityData[$key];
 					}
-					
+
 					// If the key part of localizations
 					if(isset($entityData[$key]) && isset($entityData['localizations'])) {
 						foreach($entityData['localizations'] as $key => $localized) {
-							if($localized['locale'] == $locale){
+							if(isset($localized[$key]) && $localized['locale'] == $locale){
 								$data[$key] = $localized[$key];
 							}
 						}
 					}
-					unset($entity->$key);
 				}
-				unset($entity->$locale);
 				return $data;
 			};
 
@@ -132,7 +140,7 @@ class Translatable extends \lithium\core\StaticObject {
 				$data = $processFields($fields, $entityData, $validation_locale);
 			}
 			else {
-				$validation_locale = $validation;
+				$validation_locale = $default;
 				$entityLocalizedSet = array();
 				$saveLocalizations = array();
 				foreach($locales as $locale){
@@ -145,6 +153,7 @@ class Translatable extends \lithium\core\StaticObject {
 							$entityLocalizedSet[] = $processFields($fields, $entityData[$locale], $locale);
 						}
 					}
+					unset($entity->$locale);
 				}
 			}
 
@@ -152,12 +161,12 @@ class Translatable extends \lithium\core\StaticObject {
 			// exists. If the localization doesn't exist we add the data to the localization array.
 			$localizedSet = array();
 			$dbLocalizations = array();
-			if ($entity->_id) {
-				$record = $self::find($entity->_id->__toString(), array('Ignore-Locale'=> true));
+			if ($entity->_id && $record = $self::find(
+				$entity->_id->__toString(), array('Ignore-Locale'=> true)
+			)) {
 				foreach($record->localizations as $localization) {
 					$locale = $localization->locale;
 					$dbLocalizations[] = $locale;
-					unset($entity->$locale);
 					if (!isset($entityLocalizedSet[$locale]) && $locale != $data['locale']) {
 						$localizedSet[] = $localization->to('array');
 					}
@@ -184,7 +193,7 @@ class Translatable extends \lithium\core\StaticObject {
 			if (!$entity->_id && isset($entityLocalizedSet)) {
 				$localizedSet = $entityLocalizedSet;
 			}
-			
+
 			// If updating multiple translations at once, we need to add the translations
 			// that are still not yet covered from the update information
 			if ($entity->_id  && isset($entityLocalizedSet)) {
@@ -194,8 +203,13 @@ class Translatable extends \lithium\core\StaticObject {
 				}
 			}
 
-			$entity->set(array('localizations' => $localizedSet));
+			$entity->localizations = $localizedSet;
 			$entity->validation = $validation_locale;
+			
+			foreach($fields as $key){
+				unset($entity->$key);
+			}
+
 			$params['entity'] = $entity;
 
 			return $chain->next($self, $params, $chain);
@@ -204,9 +218,9 @@ class Translatable extends \lithium\core\StaticObject {
 
 	/**
 	 * A protected function to apply our filter to the classes find method.
-	 * We grab the document from the documents as needed and pass them to you in language specific output. 
-	 * If you pass a locale option we return only the document for that locale. If you only want to search a
-	 * locale but return all locales then pass locale as a condition.
+	 * We grab the document from the documents as needed and pass them to you in language specific
+	 * output. If you pass a locale option we return only the document for that locale. If you only
+	 * want to search a locale but return all locales then pass locale as a condition.
 	 *
 	 * @param string $class The current called model class to which the find filter is applied.
 	 * @return mixed An integer/document or document set from the current find.
@@ -225,14 +239,14 @@ class Translatable extends \lithium\core\StaticObject {
 			if (isset($params['options']['locale'])) {
 				$params['options']['conditions']['locale'] = $params['options']['locale'];
 			}
-			
+
 			// Need to parse the options find options as needed to keep 
 			$options = $class::parseOptions($params['options'], $fields, $locales);
 			$params['options'] = $options;
 			$result = $chain->next($self, $params, $chain);
-			
+
 			$options += $fields;
-			
+
 			// If this is an integer result send it back as it is.
 			if (is_int($result)) {
 				return $result;
@@ -249,8 +263,8 @@ class Translatable extends \lithium\core\StaticObject {
 
 	/**
 	 * A protected method to override model validates.
-	 * We take a validation key to get get the record we want to validate, this could be hard in the case of 
-	 * multi locale saving. But I think we really need to do 1 at a time.
+	 * We take a validation key to get get the record we want to validate, this could be hard in the
+	 * case of multi locale saving. But I think we really need to do 1 at a time.
 	 * 
 	 * @param string $class The current called model class to which the _validates filter is applied.
 	 * @return boolean The result of the validation result
@@ -258,14 +272,19 @@ class Translatable extends \lithium\core\StaticObject {
 	protected static function _validates($class) {
 		$class::applyFilter('validates', function($self, $params, $chain) {
 			$entity = clone $params['entity'];
+
 			foreach($entity->localizations as $localization) {
-				if (isset($entity->validation) && $localization->locale == $entity->validation && is_object($localization)) {
+
+				$isValidationLocale = ($localization->locale == $entity->validation);
+
+				if (isset($entity->validation) && $isValidationLocale && is_object($localization)) {
 					foreach($localization->data() as $key => $value) {
 						$entity->$key = $value;
 					}
 					unset($entity->localizations);
 					$params['entity'] = $entity;
 				}
+
 			}
 			return $chain->next($self, $params, $chain);
 		});
@@ -280,24 +299,25 @@ class Translatable extends \lithium\core\StaticObject {
 	 * @return closure Contains logic needed to parse a single result correctly.
 	 */
 	public static function formatReturnDocument($options, $fields) {
+
 		return function($result) use ($options, $fields) {
+
 			if (!is_object($result)) {
 				return $result;
 			}
+
 			foreach($result->localizations as $localization) {
 				$locale = $localization->locale;
-				$localization->_id = $result->_id;
 				$fields[] = 'locale';
+				
 				if (isset($options['locale']) && $options['locale'] == $locale) {
 					foreach($fields as $key){
-						$result->set(array($key => $localization->$key));
+						$result->$key = $localization->$key;
 					}
-					unset($result->localizations);
 					return $result;
 				}
 				$result->$locale = $localization;
 			}
-			unset($result->documents);
 			return $result;
 		};
 	}
@@ -312,9 +332,10 @@ class Translatable extends \lithium\core\StaticObject {
 	public static function parseOptions($options, $fields, $locales) {
 		$subdocument = 'localizations.';
 		$array = array();
-		foreach($options as $option => $values) {
-			if(is_array($values) && !empty($values)) {
-				foreach($values as $key => $args) {
+
+		foreach ($options as $option => $values) {
+			if (is_array($values) && !empty($values)) {
+				foreach ($values as $key => $args) {
 					
 					// If option has an argument key that starts with a localization
 					$hasLocalizedKey = (in_array(true, array_map( function($localization) use ($key) {
@@ -333,7 +354,7 @@ class Translatable extends \lithium\core\StaticObject {
 						$array[$option][$subdocument . $key] = $args;
 					}
 					
-					if(!$isLocalized && !$hasLocalizedKey) {
+					if (!$isLocalized && !$hasLocalizedKey) {
 						$array[$option][$key] = $args;
 					}
 				}
@@ -344,5 +365,6 @@ class Translatable extends \lithium\core\StaticObject {
 		}
 		return $array;
 	}
+}
 
-}	
+?>

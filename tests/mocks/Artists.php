@@ -12,14 +12,14 @@ class Artists extends \li3_behaviors\extensions\Model {
 			array('lengthBetween', 'min' => 4, 'max' => 20, 'message' => 'Username should be between 5 and 20 characters.')
 		),
 	);
-	
+
 	protected $_actsAs = array(
 		'Translatable' => array(
-			'validation' => 'ja',
+			'default' => 'ja',
 			'locales' => array('en', 'it', 'ja'),
 			'fields' => array('name', 'profile')
 		)
 	);
-	
+
 }
 ?>
