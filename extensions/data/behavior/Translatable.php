@@ -10,6 +10,7 @@ namespace li3_translate\extensions\data\behavior;
 
 use lithium\data\source\MongoDb;
 use lithium\util\Set;
+use lithium\core\Evironment;
 
 /**
  * The `Translateable` class handles all translating MongoDB based content, the data is placed
@@ -81,6 +82,7 @@ class Translatable extends \lithium\core\StaticObject {
 			
 			if($params['data']) {
 				$entity->set($params['data']);
+				$params['data'] = null;
 			}
 
 			// Add errors to locale and return if locale has not been set or locale separated

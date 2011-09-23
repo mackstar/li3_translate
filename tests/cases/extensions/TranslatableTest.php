@@ -15,8 +15,7 @@ class TranslatableTest extends \lithium\test\Unit {
 	public function setUp(){
 		Artists::remove();
 	}
-	
-	
+
 	public function testInitiallyWorking() {
 		
 		$artist = Artists::create(array(
@@ -28,7 +27,10 @@ class TranslatableTest extends \lithium\test\Unit {
 		
 		$artist = Artists::first();
 		$this->assertEqual('ja', $artist->validation);
-		$artist->save(array('it.name'=>'Ricardo'));
+		$artist->save(array('it.name'=>'Ricardo', 'ja.name' => 'リチャード'));
+		$artist = Artists::first();
+		$this->assertEqual('リチャード', $artist->ja->name);
+		$this->assertEqual('Ricardo', $artist->it->name);
 
 		$artist = Artists::all(array('conditions' => array('name' => 'Ricardo'), 'locale' => 'it'));
 		$this->assertEqual('Ricardo', $artist->first()->name);
@@ -45,7 +47,6 @@ class TranslatableTest extends \lithium\test\Unit {
 
 		$artist = Artists::first(array('conditions' => array('name' => 'Richard Japper')));
 		$this->assertEqual('Richard Japper', $artist->ja->name);
-		$this->assertEqual('Richard Japper', $artist->name);
 
 		$artist = Artists::create(array('name'=>'Richard', 'profile'=>'Dreaded Rasta', 'locale' => 'en'));
 		$artist->save();
@@ -82,25 +83,7 @@ class TranslatableTest extends \lithium\test\Unit {
 		$this->assertNull($artists->first());
 		
 	}
-	
-/*	
-	public function testDefaultSetUp() {
-		
-		$artist = Artists::create(array(
-			'name'=>'Richard Japper', 
-			'profile'=>'Dreaded Rasta Nihon'));
-		$this->assertTrue($artist->save());
-		
-		$data = $artist->data();
-		$this->assertFalse(isset($data['name']));
-		
-		$data = array('name' => 'Richard', 'locale' => 'en');
-		$this->assertTrue($artist->save($data));
-		$data = $artist->data();
-		$this->assertFalse(isset($data['name']));
-		
-	}
-*/
+
 	
 	
 }	
