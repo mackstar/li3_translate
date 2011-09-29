@@ -32,14 +32,14 @@ Then in the model you wish to have translatable please add something to the tune
 ```
 protected $_actsAs = array(
 	'Translatable' => array(
-		'validation' => 'ja',
+		'default' => 'ja',
 		'locales' => array('en', 'it', 'ja'),
 		'fields' => array('name', 'profile')
 	)
 );
 ```
 
-* The validation option is only necessary if you are saving multiple languages in one create or save command. A base language of which to gather the content and validate against is needed. This ensures that your validations will still work.
+* The default option is only necessary if you are saving multiple languages in one create or save command. A base language of which to gather the content and validate against is needed. This ensures that your validations will still work.
 
 * The locales that you want to use is fairly self explanatory, it simply tells the plugin which languages you want support for.
 

@@ -10,7 +10,7 @@ namespace li3_translate\extensions\data\behavior;
 
 use lithium\data\source\MongoDb;
 use lithium\util\Set;
-use lithium\core\Evironment;
+use lithium\core\Environment;
 
 /**
  * The `Translateable` class handles all translating MongoDB based content, the data is placed
@@ -72,7 +72,7 @@ class Translatable extends \lithium\core\StaticObject {
 		if (isset(static::$_configurations['default'])) {
 			$default = static::$_configurations['default'];
 		} else {
-			$default = null;
+			$default = Environment::get('locale') ?: null;
 		}
 
 		$class::applyFilter('save', 
@@ -98,12 +98,6 @@ class Translatable extends \lithium\core\StaticObject {
 				}
 				if (!in_array(true, $localePresent) && isset($default)) {
 					$entity->locale = $default;
-				}
-				if (in_array(true, $localePresent) && !isset($default)) {
-					$entity->errors(
-						'locale', 'Validation locale needs to be set in order to save this type of data.'
-					);
-					return false;
 				}
 			}
 
