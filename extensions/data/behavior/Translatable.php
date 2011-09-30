@@ -157,7 +157,7 @@ class Translatable extends \lithium\core\StaticObject {
 			// exists. If the localization doesn't exist we add the data to the localization array.
 			$localizedSet = array();
 			$dbLocalizations = array();
-			if ($entity->_id && $record = $self::find(
+			if ($entity->exists() && $record = $self::find(
 				$entity->_id->__toString(), array('Ignore-Locale'=> true)
 			)) {
 				foreach($record->localizations as $localization) {
@@ -269,8 +269,8 @@ class Translatable extends \lithium\core\StaticObject {
 	 */
 	protected static function _validates($class) {
 		$class::applyFilter('validates', function($self, $params, $chain) {
+			$origEntity = $params['entity'];
 			$entity = clone $params['entity'];
-
 			foreach($entity->localizations as $localization) {
 
 				$isValidationLocale = ($localization->locale == $entity->validation);
@@ -280,11 +280,12 @@ class Translatable extends \lithium\core\StaticObject {
 						$entity->$key = $value;
 					}
 					unset($entity->localizations);
-					$params['entity'] = $entity;
 				}
-
+				$params['entity'] = $entity;
 			}
-			return $chain->next($self, $params, $chain);
+			$result = $chain->next($self, $params, $chain);
+			$origEntity->errors($params['entity']->errors());
+			return $result;
 		});
 	}
 
