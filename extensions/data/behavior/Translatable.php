@@ -284,7 +284,10 @@ class Translatable extends \lithium\core\StaticObject {
 				$params['entity'] = $entity;
 			}
 			$result = $chain->next($self, $params, $chain);
-			$origEntity->errors($params['entity']->errors());
+			$errors = $params['entity']->errors();
+			if (!empty($origEntity)) {
+			 $origEntity->errors($params['entity']->errors());
+			}
 			return $result;
 		});
 	}
@@ -306,16 +309,19 @@ class Translatable extends \lithium\core\StaticObject {
 			}
 			
 			foreach($result->localizations as $localization) {
-				$locale = $localization->locale;
-				$fields[] = 'locale';
+				$localizationData = $localization->data();
+				if(!empty($localizationData)) {
+					$locale = $localization->locale;
+					$fields[] = 'locale';
 				
-				if (isset($options['locale']) && $options['locale'] == $locale) {
-					foreach($fields as $key){
-						$result->$key = $localization->$key;
+					if (isset($options['locale']) && $options['locale'] == $locale) {
+						foreach($fields as $key){
+							$result->$key = $localization->$key;
+						}
+						return $result;
 					}
-					return $result;
+					$result->$locale = $localization;
 				}
-				$result->$locale = $localization;
 			}
 			return $result;
 		};
