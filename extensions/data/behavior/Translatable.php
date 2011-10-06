@@ -158,7 +158,7 @@ class Translatable extends \lithium\core\StaticObject {
 			$localizedSet = array();
 			$dbLocalizations = array();
 			if ($entity->exists() && $record = $self::find(
-				$entity->_id->__toString(), array('Ignore-Locale'=> true)
+				(string) $entity->_id, array('Ignore-Locale'=> true)
 			)) {
 				foreach($record->localizations as $localization) {
 					$locale = $localization->locale;
