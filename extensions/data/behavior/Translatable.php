@@ -202,6 +202,8 @@ class Translatable extends \lithium\core\StaticObject {
 			$entity->localizations = $localizedSet;
 			$entity->validation = $validation_locale;
 			
+			unset($entity->$validation_locale); 
+			
 			foreach($fields as $key){
 				unset($entity->$key);
 			}
@@ -307,7 +309,6 @@ class Translatable extends \lithium\core\StaticObject {
 			if (!is_object($result) && !isset($result->localizations)) {
 				return $result;
 			}
-			
 			foreach($result->localizations as $localization) {
 				$localizationData = $localization->data();
 				if(!empty($localizationData)) {
