@@ -9,6 +9,7 @@
 namespace li3_translate\tests\cases\extensions;
 
 use li3_translate\tests\mocks\Artists;
+use lithium\core\Environment;
 
 class TranslatableTest extends \lithium\test\Unit {
 	
@@ -82,6 +83,23 @@ class TranslatableTest extends \lithium\test\Unit {
 		$artists = Artists::all(array('conditions' => array('name' => 'Richard Japper'), 'locale' => 'en'));
 		$this->assertNull($artists->first());
 		
+	}
+
+	public function testEnvironmentalDefaults() {
+		$artist = Artists::create(array(
+			'ja.name'=>'Richard Japper', 
+			'ja.profile'=>'Dreaded Rasta Nihon', 
+			'en.name'=>'Richard', 
+			'en.profile'=>'Dreaded Rasta', 'something_else' => 'Something'));
+		Environment::set('test', array('locales' => array('en' => 'English', 'es' => 'Espanol')));
+		$artist->_actsAs = array(
+			'Translatable' => array(
+				'default' => 'ja',
+				'fields' => array('name', 'profile')
+			)
+		);
+		$this->assertTrue($artist->save());
+		$artist = Artists::first();
 	}
 
 	

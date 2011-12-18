@@ -68,11 +68,16 @@ class Translatable extends \lithium\core\StaticObject {
 
 		$classes = static::$_classes;
 		$fields = static::$_configurations['fields'];
-		$locales = static::$_configurations['locales'];
 		if (isset(static::$_configurations['default'])) {
 			$default = static::$_configurations['default'];
 		} else {
 			$default = Environment::get('locale') ?: null;
+		}
+		
+		if (isset(static::$_configurations['locales'])) {
+			$locales = static::$_configurations['locales'];
+		} else {
+			$locales = array_keys(Environment::get('locales')) ?: null;
 		}
 
 		$class::applyFilter('save', 

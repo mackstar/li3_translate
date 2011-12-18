@@ -13,7 +13,7 @@ class Artists extends \li3_behaviors\extensions\Model {
 		),
 	);
 
-	protected $_actsAs = array(
+	public $_actsAs = array(
 		'Translatable' => array(
 			'default' => 'ja',
 			'locales' => array('en', 'it', 'ja'),
