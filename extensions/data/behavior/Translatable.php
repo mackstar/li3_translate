@@ -230,7 +230,11 @@ class Translatable extends \lithium\core\StaticObject {
 	 */
 	protected static function _find($class){
 		$fields = static::$_configurations['fields'];
-		$locales = static::$_configurations['locales'];
+		if (isset(static::$_configurations['locales'])) {
+			$locales = static::$_configurations['locales'];
+		} else {
+			$locales = array_keys(Environment::get('locales')) ?: null;
+		}
 		$class::applyFilter('find', function($self, $params, $chain) use ($fields, $locales) {
 			
 			if (isset($params['options']['Ignore-Locale'])) {
